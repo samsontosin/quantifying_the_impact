@@ -1,0 +1,39 @@
+Year,status,dengue_cases,type
+2001/01/01,pre-wolbachia,2,Imported cases
+2002/01/01,pre-wolbachia,3,Imported cases
+2003/01/01,pre-wolbachia,3,Imported cases
+2004/01/01,pre-wolbachia,2,Imported cases
+2005/01/01,pre-wolbachia,2,Imported cases
+2006/01/01,pre-wolbachia,1,Imported cases
+2007/01/01,pre-wolbachia,1,Imported cases
+2008/01/01,pre-wolbachia,3,Imported cases
+2009/01/01,pre-wolbachia,5,Imported cases
+2010/01/01,pre-wolbachia,9,Imported cases
+2011/01/01,pre-wolbachia,6,Imported cases
+2012/01/01,pre-wolbachia,9,Imported cases
+2013/01/01,pre-wolbachia,8,Imported cases
+2014/01/01,post-wolbachia,15,Imported cases
+2015/01/01,post-wolbachia,13,Imported cases
+2016/01/01,post-wolbachia,26,Imported cases
+2017/01/01,post-wolbachia,7,Imported cases
+2018/01/01,post-wolbachia,3,Imported cases
+2019/01/01,post-wolbachia,3,Imported cases
+2001/01/01,pre-wolbachia,7,Locally acquired cases
+2002/01/01,pre-wolbachia,4,Locally acquired cases
+2003/01/01,pre-wolbachia,36,Locally acquired cases
+2004/01/01,pre-wolbachia,41,Locally acquired cases
+2005/01/01,pre-wolbachia,17,Locally acquired cases
+2006/01/01,pre-wolbachia,7,Locally acquired cases
+2007/01/01,pre-wolbachia,45,Locally acquired cases
+2008/01/01,pre-wolbachia,6,Locally acquired cases
+2009/01/01,pre-wolbachia,82,Locally acquired cases
+2010/01/01,pre-wolbachia,34,Locally acquired cases
+2011/01/01,pre-wolbachia,9,Locally acquired cases
+2012/01/01,pre-wolbachia,9,Locally acquired cases
+2013/01/01,pre-wolbachia,24,Locally acquired cases
+2014/01/01,post-wolbachia,20,Locally acquired cases
+2015/01/01,post-wolbachia,1,Locally acquired cases
+2016/01/01,post-wolbachia,2,Locally acquired cases
+2017/01/01,post-wolbachia,1,Locally acquired cases
+2018/01/01,post-wolbachia,0,Locally acquired cases
+2019/01/01,post-wolbachia,0,Locally acquired cases
