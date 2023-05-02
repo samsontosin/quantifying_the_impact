@@ -120,7 +120,7 @@ Initial_Inf_wol_vec_uninfected = 0
 
 
 # State variables
-          #human state variables
+#human state variables
 state = c(Susceptible = Initial_susceptible,
           Exposed_im = Initial_exposed_im,
           Exposed_lc = Initial_exposed_lc,
@@ -156,10 +156,10 @@ Dengue_base_model = function(t, state, parameters) {
     QQ = Aq_vec + Aq_wol_vec                            #All aquatic-staged mosquitoes 
     K = L * Total_population * (cos (2 * pi * (t + 15)/(365.25)) + 1) / 2  #Chowell et al                       #Carrying capacity
     kappa = ifelse((t >  as.numeric(post_wolb_date - start_sim_date)) &&
-                                     t <  as.numeric(wolb_stop_date - start_sim_date), wolb_rate, 0)                #Wolbachia mosquitoes importation rate
+                     t <  as.numeric(wolb_stop_date - start_sim_date), wolb_rate, 0)                #Wolbachia mosquitoes importation rate
     
     xi = ifelse(t < as.numeric(start_date - start_sim_date), xi_1, 0)  #importation rate of dengue
-
+    
     beta1_plus_beta2 = ((biting_rate_u * trans_prob_u * L * Inf_vec) + (biting_rate_w * trans_prob_wh * L * Inf_wol_vec))/Total_population
     
     beta3 =  biting_rate_u * trans_prob_u * (Infected_im_sym + Infected_lc_sym)/Total_population  # with uninfected mosq biting rate
@@ -217,46 +217,46 @@ solve_base_model = function(y, model_func, parms, imports){
     y_initial["Infected_im_sym"] = y_initial["Infected_im_sym"] + imports$Cases[i]
     output = ode(y_initial, seq(imports$t[i], imports$t[i+1], by=1), model_func, parms)
     full_output = rbind(full_output[-nrow(full_output), ], output)
-}
+  }
   return(full_output)
 }
 out = solve_base_model(state, Dengue_base_model, parameters, Imported_event)
 out 
-  
-  # Calculate the prevalence, incidence and cumulative incidence (for comparison with data)
-  Wolb_frequency = (out[, "Aq_wol_vec"] + out[, "Sus_wol_vec"]+out[, "Exp_wol_vec"] + out[, "Inf_wol_vec"])/(out[, "Aq_vec"] + out[, "Sus_vec"] +out[, "Exp_vec"] + out[, "Inf_vec"] +out[, "Aq_wol_vec"] + out[, "Sus_wol_vec"]+out[, "Exp_wol_vec"] + out[, "Inf_wol_vec"])
-  Prevalence = out[, "Exposed_lc"] + out[, "Infected_lc_sym"]
-  Incidence = parameters["prob_symp"] * (out[, "Exposed_lc"]) * parameters["activation_rate"]
-  Cumulative_incidence = cumsum(Incidence) + out[1, "Infected_lc_sym"]
 
-  # Append these derived outputs to the main solution
-  out = cbind(out, Prevalence, Incidence, Cumulative_incidence, Wolb_frequency)
-  colnames(out)[c(17, 18, 19, 20)] = c("Prevalence", "Incidence", "Cumulative_incidence","Wolb_frequency")
-  
-  out = as.data.frame(out)
-  
-  Dates = seq.Date(start_sim_date, end_date_lc, by = 'day')
-  out$Date = Dates
+# Calculate the prevalence, incidence and cumulative incidence (for comparison with data)
+Wolb_frequency = (out[, "Aq_wol_vec"] + out[, "Sus_wol_vec"]+out[, "Exp_wol_vec"] + out[, "Inf_wol_vec"])/(out[, "Aq_vec"] + out[, "Sus_vec"] +out[, "Exp_vec"] + out[, "Inf_vec"] +out[, "Aq_wol_vec"] + out[, "Sus_wol_vec"]+out[, "Exp_wol_vec"] + out[, "Inf_wol_vec"])
+Prevalence = out[, "Exposed_lc"] + out[, "Infected_lc_sym"]
+Incidence = parameters["prob_symp"] * (out[, "Exposed_lc"]) * parameters["activation_rate"]
+Cumulative_incidence = cumsum(Incidence) + out[1, "Infected_lc_sym"]
 
-  out = as.data.frame(out)
-  
-  # Aggregate the output to monthly output to include the monthly cumulative incidence
-  out = out %>% mutate(Month = month(Date), Year = year(Date)) %>%
-   mutate(Ini_date = ymd(paste(Year, Month, "01", sep = "-"))) %>%
-   group_by(Ini_date) %>%
-   filter(Date == max(Date))
-  out = as.data.frame(out)
-  out
-  monthly_incidence = c(out$Cumulative_incidence[1], diff(out$Cumulative_incidence))#  parameters["prob_symp"] * c(out$cuminc[1], diff(out$cuminc))
-  
-  out = as.data.frame(out)
+# Append these derived outputs to the main solution
+out = cbind(out, Prevalence, Incidence, Cumulative_incidence, Wolb_frequency)
+colnames(out)[c(17, 18, 19, 20)] = c("Prevalence", "Incidence", "Cumulative_incidence","Wolb_frequency")
 
-  # Finally, add in the dates corresponding to the time points in the data
-  out$Incidence_monthly = monthly_incidence
-  out$Status = c(ifelse(out$time < as.numeric(post_wolb_date - start_sim_date), "Pre-Wolbachia", "Post-Wolbachia"))
-  #out$Status = Locally_acquired_cases$Status
-  out.init = data.frame(out)
-  out.init
+out = as.data.frame(out)
+
+Dates = seq.Date(start_sim_date, end_date_lc, by = 'day')
+out$Date = Dates
+
+out = as.data.frame(out)
+
+# Aggregate the output to monthly output to include the monthly cumulative incidence
+out = out %>% mutate(Month = month(Date), Year = year(Date)) %>%
+  mutate(Ini_date = ymd(paste(Year, Month, "01", sep = "-"))) %>%
+  group_by(Ini_date) %>%
+  filter(Date == max(Date))
+out = as.data.frame(out)
+out
+monthly_incidence = c(out$Cumulative_incidence[1], diff(out$Cumulative_incidence))#  parameters["prob_symp"] * c(out$cuminc[1], diff(out$cuminc))
+
+out = as.data.frame(out)
+
+# Finally, add in the dates corresponding to the time points in the data
+out$Incidence_monthly = monthly_incidence
+out$Status = c(ifelse(out$time < as.numeric(post_wolb_date - start_sim_date), "Pre-Wolbachia", "Post-Wolbachia"))
+#out$Status = Locally_acquired_cases$Status
+out.init = data.frame(out)
+out.init
 
 #Number of Wolbachia-infected mosquitoes with time
 Wol_only = ggplot(out.init, aes(x=Date, y=(Aq_wol_vec + Sus_wol_vec + Exp_wol_vec + Inf_wol_vec))) +
@@ -344,7 +344,7 @@ nnn = ggplot()+
   geom_line(data = out.init1, aes(x=Date, y=Wolb_frequency, color = "Model"), size=2) +
   geom_point(data = new_Wolbachia_data, aes(x = month1, y = prop, color = "Data"), size = 2) + 
   xlab("Time") +
- ylab(expression(paste(italic("Wolbachia "),"frequency")))+
+  ylab(expression(paste(italic("Wolbachia "),"frequency")))+
   #labs(color = "Legend") +
   scale_colour_manual("Colour", 
                       breaks = c("Model", "Data"),
@@ -383,9 +383,9 @@ nllik = function(t_parameters,
   print(state_base)
   
   out1 = solve_base_model(state_base,
-                         func.,
-                         parms_base,
-                         times.)
+                          func.,
+                          parms_base,
+                          times.)
   #out1  = out[out$Date >= "2001-01-01", ]
   # Calculate the prevalence, incidence and cumulative incidence (for comparison with data)
   Wolb_frequency = (out1[, "Aq_wol_vec"] + out1[, "Sus_wol_vec"]+out1[, "Exp_wol_vec"] + out1[, "Inf_wol_vec"])/(out1[, "Aq_vec"] + out1[, "Sus_vec"] +out1[, "Exp_vec"] + out1[, "Inf_vec"] +out1[, "Aq_wol_vec"] + out1[, "Sus_wol_vec"]+out1[, "Exp_wol_vec"] + out1[, "Inf_wol_vec"])
@@ -422,7 +422,7 @@ nllik = function(t_parameters,
   out2 = out1[out1$Date>="2001-01-01", ]
   out2 = data.frame(out2)
   print(head(out2,5))
-    return(-sum(dpois(cases_period$Cases, out2$Incidence_monthly, log=TRUE)))
+  return(-sum(dpois(cases_period$Cases, out2$Incidence_monthly, log=TRUE)))
 }
 
 nllik.initial=nllik(init.parameters)
@@ -528,11 +528,10 @@ estimates = exp(estimates_transformed[,-2])
 estimates
 ############################################################################################################
 
-# Calculate the optimal solution
+# Calculate the optimal solution with Wolbachia infected mosquitoes
 optim_params = parameters
 optim_params["trans_prob_u"] = trans_prob_u_optim
 optim_params["trans_prob_wh"] = trans_prob_wh_optim
-#optim_params["wolb_rate"] = 0
 
 optim_state = state
 
@@ -574,11 +573,6 @@ optim_solution$Incidence_monthly = monthly_incidence
 optim_solution$Status = c(ifelse(optim_solution$time < as.numeric(post_wolb_date - start_sim_date), "Pre-Wolbachia", "Post-Wolbachia"))
 optim_solution
 optim_solution = optim_solution[optim_solution$Date >= "2001-01-01", ]
-out.init$lower50 = qpois(0.25, out.init$Incidence)
-out.init$upper50 = qpois(0.75, out.init$Incidence)
-
-out.init$lower95 = qpois(0.025, out.init$Incidence)
-out.init$upper95 = qpois(0.975, out.init$Incidence)
 
 optim_solution$Date = as.Date(Locally_acquired_cases$Date)
 
@@ -592,17 +586,78 @@ optim_solution$upper95 = qpois(0.975, optim_solution$Incidence_monthly)
 
 ##############################################################################################################
 
+# Calculate the optimal solution without Wolbachia-infected mosquitoes
+optim_params1 = parameters
+optim_params1["trans_prob_u"] = trans_prob_u_optim
+optim_params1["trans_prob_wh"] = trans_prob_wh_optim
+optim_params1["wolb_rate"] = 0
+
+optim_state1 = state
+
+optim_solution1 = solve_base_model(optim_state1,
+                                   Dengue_base_model,
+                                   optim_params1,
+                                   Imported_event)
+Wolb_frequency = (optim_solution1[, "Aq_wol_vec"] + optim_solution1[, "Sus_wol_vec"]+optim_solution1[, "Exp_wol_vec"] + optim_solution1[, "Inf_wol_vec"])/(optim_solution1[, "Aq_vec"] + optim_solution1[, "Sus_vec"] +optim_solution1[, "Exp_vec"] + optim_solution1[, "Inf_vec"] +optim_solution1[, "Aq_wol_vec"] + optim_solution1[, "Sus_wol_vec"]+optim_solution1[, "Exp_wol_vec"] + optim_solution1[, "Inf_wol_vec"])
+Prevalence = optim_solution1[, "Exposed_lc"] + optim_solution1[, "Infected_lc_sym"]
+Incidence = parameters["prob_symp"] * (optim_solution1[, "Exposed_lc"]) * parameters["activation_rate"]
+Cumulative_incidence = cumsum(Incidence) + optim_solution1[1, "Infected_lc_sym"]
+#monthly_incidence = optim_solution1[, "cuminc"]
+
+# Append these derived optim_solution1puts to the main solution
+optim_solution1 = cbind(optim_solution1, Prevalence, Incidence, Cumulative_incidence, Wolb_frequency)
+colnames(optim_solution1)[c(17, 18, 19, 20)] = c("Prevalence", "Incidence", "Cumulative_incidence","Wolb_frequency")
+
+optim_solution1 = as.data.frame(optim_solution1)
+
+# Finally, add in the dates corresponding to the time points
+Dates = seq.Date(start_sim_date, end_date_lc, by = 'day')
+optim_solution1$Date = Dates
+
+optim_solution1 = as.data.frame(optim_solution1)
+#   
+# Aggregate the output to monthly output to include the monthly cumulative incidence
+optim_solution1 = optim_solution1 %>% mutate(Month = month(Date), Year = year(Date)) %>%
+  mutate(Ini_date = ymd(paste(Year, Month, "01", sep = "-"))) %>%
+  group_by(Ini_date) %>%
+  filter(Date == max(Date))
+optim_solution1 = as.data.frame(optim_solution1)
+optim_solution1
+
+monthly_incidence = c(optim_solution1$Cumulative_incidence[1], diff(optim_solution1$Cumulative_incidence))#  parameters["prob_symp"] * c(optim_solution1$cuminc[1], diff(optim_solution1$cuminc))
+
+optim_solution1 = as.data.frame(optim_solution1)
+
+optim_solution1$Incidence_monthly = monthly_incidence
+optim_solution1$Status = c(ifelse(optim_solution1$time < as.numeric(post_wolb_date - start_sim_date), "Pre-Wolbachia", "Post-Wolbachia"))
+optim_solution1
+optim_solution1 = optim_solution1[optim_solution1$Date >= "2001-01-01", ]
+
+optim_solution1$Date = as.Date(Locally_acquired_cases$Date)
+
+#optim_solution1$R_eff = 0.9 * (optim_solution1$Susceptible / Total_population)
+
+optim_solution1$lower50 = qpois(0.25, optim_solution1$Incidence_monthly)
+optim_solution1$upper50 = qpois(0.75, optim_solution1$Incidence_monthly)
+
+optim_solution1$lower95 = qpois(0.025, optim_solution1$Incidence_monthly)
+optim_solution1$upper95 = qpois(0.975, optim_solution1$Incidence_monthly)
+
+###############################################################################################################
 # Plotting the locally acquired data and model
 
 library(scales)
 sammy15<- ggplot(Locally_acquired_cases) +
   geom_col(aes(x=Date, y=Cases, fill=Status), width=50) +
+  geom_line(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence (no Wolbachia)"), size=1) +
+  geom_ribbon(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, ymin=lower50, ymax=upper50), fill = "purple", size=1, alpha=0.5) +
+  geom_ribbon(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, ymin=lower95, ymax=upper95), fill = "purple", size=1, alpha=0.2) +
   geom_line(data=optim_solution, aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence"), size=1) +
   geom_ribbon(data=optim_solution, aes(x=Date, ymin=lower50, ymax=upper50), size=1, alpha=0.5) +
   geom_ribbon(data=optim_solution, aes(x=Date, ymin=lower95, ymax=upper95), size=1, alpha=0.2) +
   ylab("Monthly dengue notifications") +
   xlab("Time")+
-  scale_color_manual(name = "Model", values = c("red")) +
+  scale_color_manual(name = "Model", values = c("red", "blue")) +
   scale_x_date(date_breaks = "1 year", 
                labels=date_format("%Y"),
                limits = as.Date(c('2001-01-01','2019-03-01'))) +
@@ -686,89 +741,152 @@ wolb_rate = 5e3
 L = 2
 
 #R0 computation and visualization
-  alpha1 = (biting_rate_w^2 * trans_prob_wh * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
-  alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
-  alpha = alpha1/alpha2
-  R1 = (biting_rate_u^2 * trans_prob_u^2 * mosq_act_rate * activation_rate * optim_solution$Sus_vec / (Total_population)) #numerator uninf mosq
-  R11 = ((mu + recovery_rate) * (mu_u + mosq_act_rate) * (mu + activation_rate) *  mu_u)  #denominator uninf mosq
-  R2 = (biting_rate_w^2 * trans_prob_wh * trans_prob_u * mosq_act_wol_rate * activation_rate * optim_solution$Sus_wol_vec / (Total_population)) #numerator wolb inf mosq
-  R22 = ((mu + recovery_rate) * (mu_w + mosq_act_wol_rate) * (mu + activation_rate) * mu_w)  #denominator wolb inf mosq
-  R01 = sqrt(R1/R11)
-  R02 = sqrt(R2/R22)
-  R0u = R01
-  R0 = sqrt(R01^2 + R02^2)
-  optim_solution$R_nut = R0
-  optim_solution$R_0u = R0u
-  optim_solution$wol_prop = optim_solution$Sus_wol_vec/(optim_solution$Sus_vec + optim_solution$Sus_wol_vec)
-  optim_solution$R0toRmax = sqrt((1-optim_solution$wol_prop)+ alpha * optim_solution$wol_prop)
-  Rvswol_prop = data.frame(optim_solution$wol_prop,optim_solution$R0toRmax)
-  
-  y.expression <- expression(R(t))
-  sammy12 <- ggplot(optim_solution) +
-    geom_line(aes(x=Date, y=R_nut), size=1, colour="blue") +
-    ylab(y.expression) +
-    xlab("Time")+
-    scale_x_date(date_breaks = "1 year", 
-                 labels=date_format("%Y"),
-                 limits = as.Date(c('2001-01-01','2019-03-01'))) +
-    #ggtitle("Plot of R0 in the presence of Wolbachia") +
-    annotate(geom = "vline",
-             x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
-             xintercept = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
-             linetype = "dashed") +
-    annotate(geom = "text",
-             label = expression(paste(italic("Wolbachia "),"introduction")),
-             x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
-             y = c(0.4),
-             angle = 90,
-             vjust = 1) +
-    theme(panel.background = element_rect(fill = "white", colour = "white"),
-          panel.grid.major = element_line(colour = "grey90"),
-          panel.grid.major.x = element_blank(),
-          axis.line = element_line(size = 0.4, colour = "grey10"),
-          text = element_text(size=12,  family="serif"),
-          legend.key = element_rect(fill = "white", colour = "white"),
-          legend.position = "top",
-          strip.background =element_rect(fill="royalblue"),
-          strip.text = element_text(size = 10, colour = 'white'))
-  
-  sammy12
-  
-  #####################################################################################################################
-  
-  ## To account for the changing R(eta)/Rmax with time based on the proportion of Wolbachia infected mosquitoes introduced,
-  
-  plot(x=optim_solution$wol_prop, y=optim_solution$R0toRmax, ylab = expression(R/R(max)), xlab = expression(paste("Proportion of ", italic("Wolbachia-"),"infected mosquitoes")), col = "red", lwd = 3)
-  
-  #the mean R0 for pre-wolbachia
-  SSS = optim_solution[optim_solution$Status=="Pre-Wolbachia", ]
-  mean_of_R_nut_before_wol = mean(SSS$R_nut)
-  mean_of_R_nut_before_wol
-  
-  #the mean R0 for post wolbachia
-  TTT = optim_solution[optim_solution$Status=="Post-Wolbachia", ]
-  mean_of_R_nut_after_wol = mean(TTT$R_nut)
-  mean_of_R_nut_after_wol
+alpha1 = (biting_rate_w^2 * trans_prob_wh * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
+alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha = alpha1/alpha2
+R1 = (biting_rate_u^2 * trans_prob_u^2 * mosq_act_rate * activation_rate * optim_solution$Sus_vec / (Total_population)) #numerator uninf mosq
+R11 = ((mu + recovery_rate) * (mu_u + mosq_act_rate) * (mu + activation_rate) *  mu_u)  #denominator uninf mosq
+R2 = (biting_rate_w^2 * trans_prob_wh * trans_prob_u * mosq_act_wol_rate * activation_rate * optim_solution$Sus_wol_vec / (Total_population)) #numerator wolb inf mosq
+R22 = ((mu + recovery_rate) * (mu_w + mosq_act_wol_rate) * (mu + activation_rate) * mu_w)  #denominator wolb inf mosq
+R01 = sqrt(R1/R11)
+R02 = sqrt(R2/R22)
+R0u = R01
+R0 = sqrt(R01^2 + R02^2)
+optim_solution$R_nut = R0
+optim_solution$R_0u = R0u
+optim_solution$wol_prop = optim_solution$Sus_wol_vec/(optim_solution$Sus_vec + optim_solution$Sus_wol_vec)
+optim_solution$R0toRmax = sqrt((1-optim_solution$wol_prop)+ alpha * optim_solution$wol_prop)
+Rvswol_prop = data.frame(optim_solution$wol_prop,optim_solution$R0toRmax)
+
+y.expression <- expression(R(t))
+sammy12 <- ggplot(optim_solution) +
+  geom_line(aes(x=Date, y=R_nut), size=1, colour="blue") +
+  ylab(y.expression) +
+  xlab("Time")+
+  scale_x_date(date_breaks = "1 year", 
+               labels=date_format("%Y"),
+               limits = as.Date(c('2001-01-01','2019-03-01'))) +
+  #ggtitle("Plot of R0 in the presence of Wolbachia") +
+  annotate(geom = "vline",
+           x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
+           xintercept = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
+           linetype = "dashed") +
+  annotate(geom = "text",
+           label = expression(paste(italic("Wolbachia "),"introduction")),
+           x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
+           y = c(0.4),
+           angle = 90,
+           vjust = 1) +
+  theme(panel.background = element_rect(fill = "white", colour = "white"),
+        panel.grid.major = element_line(colour = "grey90"),
+        panel.grid.major.x = element_blank(),
+        axis.line = element_line(size = 0.4, colour = "grey10"),
+        text = element_text(size=12,  family="serif"),
+        legend.key = element_rect(fill = "white", colour = "white"),
+        legend.position = "top",
+        strip.background =element_rect(fill="royalblue"),
+        strip.text = element_text(size = 10, colour = 'white'))
+
+sammy12
+
+#####################################################################################################################
+
+## To account for the changing R(eta)/Rmax with time based on the proportion of Wolbachia infected mosquitoes introduced,
+
+plot(x=optim_solution$wol_prop, y=optim_solution$R0toRmax, ylab = expression(R/R(max)), xlab = expression(paste("Proportion of ", italic("Wolbachia-"),"infected mosquitoes")), col = "red", lwd = 3)
+
+###############################################################################################################################
+S_u = seq(1,0,-0.01)
+
+S_w = seq(0,1,0.01)
+
+trans_prob_u = 0.2147
+trans_prob_wh = 0.0052
+
+alpha1 = (biting_rate_w^2 * trans_prob_wh * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
+alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha = alpha1/alpha2
+
+R0Rmax_Sw = sqrt((1-S_w)+ alpha * S_w)
+R_eta = data.frame(R0Rmax_Sw, S_w)
+
+trans_prob_u1 = 0.2116
+trans_prob_wh1 = 0.0029
+
+alpha11 = (biting_rate_w^2 * trans_prob_wh1 * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
+alpha22 = (biting_rate_u^2 * trans_prob_u1 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha_L = alpha11/alpha22
+
+R0Rmax_SwL = sqrt((1-S_w)+ alpha_L * S_w)
+
+trans_prob_u2 = 0.2178
+trans_prob_wh2 = 0.0097
+
+alpha111 = (biting_rate_w^2 * trans_prob_wh2 * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
+alpha222 = (biting_rate_u^2 * trans_prob_u2 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha_U = alpha111/alpha222
+
+R0Rmax_SwU = sqrt((1-S_w)+ alpha_U * S_w)
+R_eta95 = data.frame(R0Rmax_Sw, R0Rmax_SwL, R0Rmax_SwU, S_w)
+
+#plotting R0 and S_w
+plot(x=S_w, y=R0Rmax_Sw, ylab = expression(R/R(max)), xlab = expression(paste("Proportion of ", italic("Wolbachia-"),"infected mosquitoes")), type = "l", col = "red", lwd = 3)
+sammy13 <- ggplot() +
+  geom_line(data=R_eta, aes(x=S_w, y=R0Rmax_Sw), size=1, colour="red") +
+  geom_ribbon(data=R_eta95, aes(x=S_w, ymin = R0Rmax_SwL, ymax = R0Rmax_SwU), colour="red", size=1, alpha=0.5) +
+  ylab(expression(R/R(max))) +
+  xlab(expression(paste("Proportion of ", italic("Wolbachia-"),"infected mosquitoes")))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"),
+        panel.grid.major = element_line(colour = "grey90"),
+        panel.grid.major.x = element_blank(),
+        axis.line = element_line(size = 0.4, colour = "grey10"),
+        text = element_text(size=12,  family="serif"),
+        legend.key = element_rect(fill = "white", colour = "white"),
+        legend.position = "top",
+        strip.background =element_rect(fill="royalblue"),
+        strip.text = element_text(size = 10, colour = 'white'))
+
+sammy13
+
+###############################################################################################################################
+#the mean R0 for pre-wolbachia
+SSS = optim_solution[optim_solution$Status=="Pre-Wolbachia", ]
+mean_of_R_nut_before_wol = mean(SSS$R_nut)
+mean_of_R_nut_before_wol
+
+#the mean R0 for post wolbachia
+TTT = optim_solution[optim_solution$Status=="Post-Wolbachia", ]
+mean_of_R_nut_after_wol = mean(TTT$R_nut)
+mean_of_R_nut_after_wol
 
 ############################################################################################################
-  
-  # Plotting the yearly aggregated dengue case notifications for pre-Wolbachia (from 2001 to 2014) and 
-  # post-Wolbachia (from 2014 - 2019) periods for both Imported and locally acquired cases
-  
-  library(ggsignif)
-  library(tidyverse)
-  both_cases <- read.csv("dengue_both.csv")
-  both_cases
-  sam <- ggplot(both_cases, aes(x=relevel(status, "pre-wolbachia"), y=dengue_cases)) +
-    geom_boxplot(aes(fill=status)) +
-    geom_signif(comparisons = list(c("pre-wolbachia", "post-wolbachia")), 
-                map_signif_level=TRUE, tip_length = 0, vjust = 0.2) +
-    scale_fill_discrete(
-      labels = c(expression(paste("post-wolbachia" = "post-", italic("Wolbachia"), " (2001-2014)")),
-                 expression(paste("pre-wolbachia"  = "pre-", italic("Wolbachia"), " (2015-2019)")))) +
-    xlab("Status") +
-    ylab("dengue cases") +
-    theme_bw()
-  sam + facet_grid(.~type) + theme(strip.text.x = element_text(size=16, color="black",face="bold"))
-  
- 
+
+# Plotting the yearly aggregated dengue case notifications for pre-Wolbachia (from 2001 to 2014) and 
+# post-Wolbachia (from 2014 - 2019) periods for both Imported and locally acquired cases
+
+library(ggsignif)
+library(tidyverse)
+both_cases <- read.csv("dengue_both.csv")
+both_cases
+sam <- ggplot(both_cases, aes(x=relevel(status, "pre-wolbachia"), y=dengue_cases)) +
+  geom_boxplot(aes(fill=status)) +
+  geom_signif(comparisons = list(c("pre-wolbachia", "post-wolbachia")), 
+              map_signif_level=TRUE, tip_length = 0, vjust = 0.2) +
+  scale_fill_discrete(
+    labels = c(expression(paste("post-wolbachia" = "post-", italic("Wolbachia"), " (2014-2019)")),
+               expression(paste("pre-wolbachia"  = "pre-", italic("Wolbachia"), " (2001-2013)")))) +
+  xlab("Status") +
+  ylab("dengue cases") +
+  theme_bw()
+sam + facet_grid(.~type) + theme(strip.text.x = element_text(size=16, color="black",face="bold"))
+
+imp = both_cases[both_cases$type=="Imported cases",]
+imp_pre = imp[imp$status=="pre-wolbachia",]
+summary(imp_pre$dengue_cases)
+imp_post = imp[imp$status=="post-wolbachia",]
+summary(imp_post$dengue_cases)
+loc = both_cases[both_cases$type=="Locally acquired cases",]
+loc_pre = loc[loc$status == "pre-wolbachia",]
+summary(loc_pre$dengue_cases)
+loc_post = loc[loc$status == "post-wolbachia",]
+summary(loc_post$dengue_cases)
