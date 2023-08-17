@@ -75,12 +75,12 @@ parameters = c(
   activation_rate = 1/5.5, #Gubler 1998 from Ndii 
   recovery_rate = 1/5,        #Ndii et al
   biting_rate_u = 0.3,
-  trans_prob_u = 0.2147,
+  trans_prob_u = 0.1976, #0.2209,
   biting_rate_w = 0.3 * 0.95,
-  trans_prob_wh = 0.0052,
+  trans_prob_wh = 0.0084, #0.0026,
   mu = 0.000034,         #0.000034,              # Adeshina et al
-  xi_1 = 0.4 * 4 * 12 / 365.25, #rate of importation before Wolbachia per month 0.4
-  xi_2 = 1 * 12 / 365.25,  #rate of importation after Wolbachia per month 1
+  xi_1 = 0.4 * 4 * 12 / 365.25, #rate of importation before Wolbachia per month 0.4. We multiplied by 4 to acct for all cases (asym and Sym)
+  #xi_2 = 1 * 12 / 365.25,  #rate of importation after Wolbachia per month 1
   prob_symp = 1/4,          #Kamtchum-Tatuene et al
   mu_u = 0.043,
   mu_w = 0.068,
@@ -95,8 +95,8 @@ parameters = c(
   mosq_act_rate = 0.1,      #chowell et al
   mosq_act_wol_rate = 0.1,    #chowel et al
   sigma = 0,
-  wolb_rate = 5e3,
-  L = 2
+  wolb_rate = 4694,
+  L = 10
 )
 
 # Initial conditions
@@ -160,7 +160,7 @@ Dengue_base_model = function(t, state, parameters) {
     
     xi = ifelse(t < as.numeric(start_date - start_sim_date), xi_1, 0)  #importation rate of dengue
     
-    beta1_plus_beta2 = ((biting_rate_u * trans_prob_u * L * Inf_vec) + (biting_rate_w * trans_prob_wh * L * Inf_wol_vec))/Total_population
+    beta1_plus_beta2 = ((biting_rate_u * trans_prob_u * Inf_vec) + (biting_rate_w * trans_prob_wh * Inf_wol_vec))/Total_population
     
     beta3 =  biting_rate_u * trans_prob_u * (Infected_im_sym + Infected_lc_sym)/Total_population  # with uninfected mosq biting rate
     #beta3 = 0
@@ -174,7 +174,8 @@ Dengue_base_model = function(t, state, parameters) {
     Infectedlc_sym_change = Exposed_lc * activation_rate - Infected_lc_sym * recovery_rate - mu * Infected_lc_sym
     Cummulative_inc = Exposed_lc * activation_rate
     Recovered_change = (Infected_im_sym + Infected_lc_sym) * recovery_rate - mu * Recovered
-    Aq_vec_change = max(0, ((((rho_u * F_u^2) + (rho_w * ((1-gamma)*F_w^2 + (1-phi)*F_w*F_u)))/FF) * (1-(QQ/K)))) - ((tau_u + mu_Au) * Aq_vec) 
+    #Aq_vec_change = max(0,((((rho_u * F_u^2) + (rho_w * ((1-gamma)*F_w^2 + (1-phi)*F_w*F_u)))/FF) * (1-(QQ/K)))) - ((tau_u + mu_Au) * Aq_vec)
+    Aq_vec_change = ((((rho_u * F_u^2) + (rho_w * ((1-gamma)*F_w^2 + (1-phi)*F_w*F_u)))/FF) * (1-(QQ/K))) - ((tau_u + mu_Au) * Aq_vec)
     Sus_vec_change = (tau_u * Aq_vec/2) - (beta3 + mu_u)* Sus_vec
     Exp_vec_change = beta3 * Sus_vec - (mosq_act_rate + mu_u)* Exp_vec
     Inf_vec_change = mosq_act_rate * Exp_vec - mu_u * Inf_vec + sigma * Inf_wol_vec
@@ -279,12 +280,6 @@ Freq_Wol = ggplot(out.init, aes(x=Date, y=(Aq_wol_vec + Sus_wol_vec + Exp_wol_ve
   geom_line() +theme_bw()
 Freq_Wol
 
-Incid = ggplot(out.init, aes(x=Date, y=(Incidence_monthly)))+
-  xlab("Time") +
-  ylab("Dengue incidence")+
-  geom_line() +theme_bw()
-Incid
-
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -338,11 +333,16 @@ new_Wolbachia_data$month1 <- out.init1$Date
 new_Wolbachia_data$prop <- new_Wolbachia_data$perc_of_Wol_pos_aedes /100
 
 ## Plot of the wolbachia frequency in the model and Wolbachia-positive proportion in the data
+library(Rmisc)
+#CIs <- summarySE(new_Wolbachia_data, measurevar="prop", conf.interval = 0.95)
+#CIs
 library(reshape2)
 library(scales)
 nnn = ggplot()+ 
   geom_line(data = out.init1, aes(x=Date, y=Wolb_frequency, color = "Model"), size=2) +
   geom_point(data = new_Wolbachia_data, aes(x = month1, y = prop, color = "Data"), size = 2) + 
+#  geom_errorbar(data=new_Wolbachia_data, aes(ymin=prop-se, ymax=prop+se), size=1, alpha=0.5) +
+#  geom_ribbon(data=out.init1, aes(x=Date, ymin=lower95, ymax=upper95), size=1, alpha=0.2) +
   xlab("Time") +
   ylab(expression(paste(italic("Wolbachia "),"frequency")))+
   #labs(color = "Legend") +
@@ -355,8 +355,8 @@ nnn = ggplot()+
   theme_bw()
 nnn
 
-Wol_freq = ggplot(out.init, aes(x=Date, y=Wolb_frequency))+geom_line() +theme_bw()
-Wol_freq
+#Wol_freq = ggplot(out.init, aes(x=Date, y=Wolb_frequency))+geom_line() +theme_bw()
+#Wol_freq
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Calculate the negative log-likelihood for our parameter values
@@ -365,7 +365,7 @@ poisson_negative_log_likelihood_initial = -sum(dpois(cases_period$Cases,
                                                      out.init2$Incidence_monthly, log = TRUE))
 poisson_negative_log_likelihood_initial
 
-init.parameters = log(c("trans_prob_u" = 0.22, "trans_prob_wh" = 0.007))
+init.parameters = log(c("trans_prob_u" = 0.2, "trans_prob_wh" = 0.001))
 
 #solve_base_model = function(y, model_func, parms, imports)
 
@@ -428,71 +428,6 @@ nllik = function(t_parameters,
 nllik.initial=nllik(init.parameters)
 nllik.initial
 
-###### grid search using nll ###########################################################
-# trans_prob_u_vec <-  seq(from=0.01, to=0.3, by=0.02)
-# trans_prob_wh_vec = seq(from=0.01, to=0.3, by=0.02)
-# 
-# nll.grid = function(trans_prob_u_vec, trans_prob_wh_vec) {
-#   parameter_grid = expand.grid(trans_prob_u = trans_prob_u_vec,
-#                                trans_prob_wh = trans_prob_wh_vec
-#   )
-#   with(parameter_grid,{
-#     nll = mapply(function(x, y) {
-#       nllik(log(c(
-#         "trans_prob_u" = x,
-#         "trans_prob_wh" = y
-#       )))
-#     },
-#     trans_prob_u,
-#     trans_prob_wh)
-# 
-#     return(data.frame(trans_prob_u=trans_prob_u,
-#                       trans_prob_wh=trans_prob_wh,
-#                       NLL = nll))
-#   })
-# 
-# }
-# 
-# # call the function that will calculate likelihood surface
-# nll_grid_results = nll.grid(trans_prob_u_vec,trans_prob_wh_vec)
-# 
-# 
-# # Plot likelihood surface
-# nll_plot = nll_grid_results %>%
-#   ggplot2::ggplot(aes(
-#     x = trans_prob_u,
-#     y = trans_prob_wh,
-#     fill = NLL,
-#     z = NLL
-#   )) +
-#   geom_tile() +
-#   geom_contour(breaks = seq(100, 700, 1000)) +
-#   ylab("trans_prob_wh") +
-#   xlab("trans_prob_u") +
-#   ggtitle("Likelihood surface") +
-#   theme_bw()
-# 
-# # Extract optimum from grid search
-# grid_optimum = nll_grid_results[which.min(nll_grid_results$NLL), ]
-# grid_optimum
-# 
-# # Superimpose optimum on likelihood surface plot
-# nll_plot <- nll_plot +
-#   geom_point(aes(x=grid_optimum$trans_prob_u,
-#                  y=grid_optimum$trans_prob_wh),
-#              colour="red",
-#              size=3)
-# # Superimpose optimal point to negative-log-likelihood plot
-# # nll_plot <- nll_plot + geom_point(aes(x = optimum_parameters["trans_prob_u"],
-# #                                       y = optimum_parameters["trans_prob_wh"]),
-# #                                   colour = "yellow",
-# #                                   size = 3)
-# 
-# 
-# 
-# print(nll_plot)
-# #### grid search ends #####################################################################
-
 ##Model fitting using the optim function with initial parameters a_u and a_wh
 
 optim_NM <- optim(par = init.parameters,
@@ -500,7 +435,8 @@ optim_NM <- optim(par = init.parameters,
                   control = list(maxit=500),
                   method = "Nelder-Mead",
                   hessian = TRUE)
-# Inspect solution
+
++# Inspect solution
 optim_NM$par
 optim_NM$convergence
 # Back-transform parameters
@@ -528,10 +464,10 @@ estimates = exp(estimates_transformed[,-2])
 estimates
 ############################################################################################################
 
-# Calculate the optimal solution with Wolbachia infected mosquitoes
+# Calculate the optimal solution with Wolbachia-infected mosquitoes
 optim_params = parameters
-optim_params["trans_prob_u"] = trans_prob_u_optim
-optim_params["trans_prob_wh"] = trans_prob_wh_optim
+optim_params["trans_prob_u"] = 0.1976 #trans_prob_u_optim
+optim_params["trans_prob_wh"] = 0.0084 #trans_prob_wh_optim
 
 optim_state = state
 
@@ -586,10 +522,10 @@ optim_solution$upper95 = qpois(0.975, optim_solution$Incidence_monthly)
 
 ##############################################################################################################
 
-# Calculate the optimal solution without Wolbachia-infected mosquitoes
+# Calculate the optimal solution with no Wolbachia-infected mosquitoes
 optim_params1 = parameters
-optim_params1["trans_prob_u"] = trans_prob_u_optim
-optim_params1["trans_prob_wh"] = trans_prob_wh_optim
+optim_params1["trans_prob_u"] = 0.1976 #trans_prob_u_optim
+optim_params1["trans_prob_wh"] = 0.0084 #trans_prob_wh_optim
 optim_params1["wolb_rate"] = 0
 
 optim_state1 = state
@@ -649,10 +585,10 @@ optim_solution1$upper95 = qpois(0.975, optim_solution1$Incidence_monthly)
 library(scales)
 sammy15<- ggplot(Locally_acquired_cases) +
   geom_col(aes(x=Date, y=Cases, fill=Status), width=50) +
-  geom_line(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence (no Wolbachia)"), size=1) +
+  geom_line(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence (no Wolbachia)"), size=1.5) +
   geom_ribbon(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, ymin=lower50, ymax=upper50), fill = "purple", size=1, alpha=0.5) +
   geom_ribbon(data=optim_solution1[optim_solution1$Status=="Post-Wolbachia",], aes(x=Date, ymin=lower95, ymax=upper95), fill = "purple", size=1, alpha=0.2) +
-  geom_line(data=optim_solution, aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence"), size=1) +
+  geom_line(data=optim_solution, aes(x=Date, y=Incidence_monthly, colour="Cumulative monthly incidence"), size=1.5) +
   geom_ribbon(data=optim_solution, aes(x=Date, ymin=lower50, ymax=upper50), size=1, alpha=0.5) +
   geom_ribbon(data=optim_solution, aes(x=Date, ymin=lower95, ymax=upper95), size=1, alpha=0.2) +
   ylab("Monthly dengue notifications") +
@@ -669,12 +605,24 @@ sammy15<- ggplot(Locally_acquired_cases) +
            x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
            xintercept = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
            linetype = "dashed") +
+  annotate(geom = "vline",
+           x = Locally_acquired_cases[Locally_acquired_cases$Date=="2017-02-01",1],
+           xintercept = Locally_acquired_cases[Locally_acquired_cases$Date=="2017-02-01",1],
+           linetype = "dashed") +
   annotate(geom = "text",
-           label = expression(paste(italic("Wolbachia "),"introduction")),
+           label = expression(paste(italic("Wolbachia "),"introduction starts")),
            x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
-           y = c(25),
+           y = c(38),
            angle = 90, 
-           vjust = 1) +
+           vjust = 1,
+           size = 3) +
+  annotate(geom = "text",
+           label = expression(paste(italic("Wolbachia "),"introduction ends")),
+           x = Locally_acquired_cases[Locally_acquired_cases$Date=="2017-02-01",1],
+           y = c(38),
+           angle = 90, 
+           vjust = 1,
+           size = 3) +
   theme(panel.background = element_rect(fill = "white", colour = "white"),
         panel.grid.major = element_line(colour = "grey90"),
         panel.grid.major.x = element_blank(),
@@ -687,41 +635,73 @@ sammy15<- ggplot(Locally_acquired_cases) +
 
 sammy15
 
-##############################################################################################################
+Incid1 = ggplot(optim_solution, aes(x=Date, y=(Incidence_monthly)))+
+  xlab("Time") +
+  ylab("Dengue incidence")+
+  geom_line() +theme_bw()
+Incid1
 
-# Computing the corresponding reduction in dengue incidence via Wolbachia intervention 
+nnn1 = ggplot()+ 
+  geom_line(data = optim_solution, aes(x=Date, y=Wolb_frequency, color = "Model"), size=2) +
+  geom_point(data = new_Wolbachia_data, aes(x = month1, y = prop, color = "Data"), size = 2) + 
+  xlab("Time") +
+  ylab(expression(paste(italic("Wolbachia "),"frequency")))+
+  #labs(color = "Legend") +
+  scale_colour_manual("Colour", 
+                      breaks = c("Model", "Data"),
+                      values = c("cyan", "red")) +
+  scale_x_date(date_breaks = "1 year", 
+               labels=date_format(format = "%Y"),
+               limits = as.Date(c('2014-09-01','2019-03-01'))) +
+  theme_bw()
+nnn1
+##############################################################################################################################
 
-#dd1 = Locally_acquired_cases[Locally_acquired_cases$Status=="post-wolbachia", ]
-#length(dd1[,1])
-#dd11 = sum(dd1[,"Cases"])
-#dd11
-dd2 = optim_solution[optim_solution$Date >= "2014-10-01", ]  # for wolb_rate = 0 (no wolbachia introduction)
-length(dd2[,1])
-dd22 = sum(dd2[,"Incidence_monthly"])  
-dd22
+# Computing the corresponding reduction in dengue incidence via Wolbachia intervention from the Wolbachia release date onwards
 
-dd3 = optim_solution[optim_solution$Date >= "2014-10-01", ]  # for wolb_rate = 5000 (Wolbachia introduction)
-length(dd3[,1])
-dd33 = sum(dd3[,"Incidence_monthly"])  
-dd33
+deng_inc_from_WRD = optim_solution1[optim_solution1$Date >= "2014-10-01", ]  #dengue incidence from wolbachia release start date (for wolb_rate = 0 (no wolbachia introduction))
+length(deng_inc_from_WRD[,1])
+deng_inc_from_WRD_total = sum(deng_inc_from_WRD[,"Incidence_monthly"])  
+deng_inc_from_WRD_total
 
-#dd111 = (dd22 - dd33)/dd22 * 100 # percentage decrease in cases from model values
-#dd111
+deng_inc_from_WRD_WW = optim_solution[optim_solution$Date >= "2014-10-01", ]  # for wolb_rate = 4694 (Wolbachia introduction)
+length(deng_inc_from_WRD_WW[,1])
+deng_inc_from_WRD_WW_total = sum(deng_inc_from_WRD_WW[,"Incidence_monthly"])  
+deng_inc_from_WRD_WW_total
 
-dd111 = (271.6531 - 32.3766)/271.6531
-dd111_LCI = (243.955 - 29.6787)/243.955        #95% CI lower 
-dd111_UCI = (303.7923 - 35.6059)/303.7923        #95% CI upper
-#  The reduction is 89% with CI = 0.88 - 0.91.
-##################################################################################################
+perc_reduction_inc = (deng_inc_from_WRD_total - deng_inc_from_WRD_WW_total)/deng_inc_from_WRD_total * 100 # percentage decrease in cases from model values
+perc_reduction_inc
 
+#dd111_ULCI = dd111 for LCI and UCI values of estimates        #95% CI lower 
+#  The reduction is 77.5% with CI = 0.771 - 0.779.
+#####################################################################################################################################################
+# Computing the corresponding reduction in dengue incidence via Wolbachia intervention from the Wolbachia release stop date onwards
+
+deng_inc_from_WRD1 = optim_solution1[optim_solution1$Date >= "2017-02-01", ]  #dengue incidence from wolbachia release date (for wolb_rate = 0 (no wolbachia introduction))
+length(deng_inc_from_WRD1[,1])
+deng_inc_from_WRD_total1 = sum(deng_inc_from_WRD1[,"Incidence_monthly"])  
+deng_inc_from_WRD_total1
+
+deng_inc_from_WRD_WW1 = optim_solution[optim_solution$Date >= "2017-02-01", ]  # for wolb_rate = 4694 (Wolbachia introduction)
+length(deng_inc_from_WRD_WW1[,1])
+deng_inc_from_WRD_WW_total1 = sum(deng_inc_from_WRD_WW1[,"Incidence_monthly"])  
+deng_inc_from_WRD_WW_total1
+
+perc_reduction_inc1 = (deng_inc_from_WRD_total1 - deng_inc_from_WRD_WW_total1)/deng_inc_from_WRD_total1 * 100 # percentage decrease in cases from model values
+perc_reduction_inc1
+
+#dd111_ULCI = dd111 for LCI and UCI values of estimates        #95% CI  
+#  The reduction is 77.5% with CI = 0.771 - 0.779.
+
+#####################################################################################################################################################
 # Computing and plotting the time-varying reproductive number (R_0).
 
 activation_rate = 1/5.5 #Gubler 1998 from Ndii 
 recovery_rate = 1/5        #Ndii et al
 biting_rate_u = 0.3
-trans_prob_u = 0.2147
+trans_prob_u = 0.1976
 biting_rate_w = 0.3 * 0.95
-trans_prob_wh = 0.0052
+trans_prob_wh = 0.0084
 mu = 0.000034         #0.000034,              # Adeshina et al
 prob_symp = 1/4          #Kamtchum-Tatuene et al
 mu_u = 0.043
@@ -737,12 +717,12 @@ tau_w = 0.11             #walker et al
 mosq_act_rate = 0.1      #chowell et al
 mosq_act_wol_rate = 0.1    #chowel et al
 sigma = 0
-wolb_rate = 5e3
-L = 2
+wolb_rate = 4694
+L = 10
 
 #R0 computation and visualization
 alpha1 = (biting_rate_w^2 * trans_prob_wh * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
-alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu_u)
 alpha = alpha1/alpha2
 R1 = (biting_rate_u^2 * trans_prob_u^2 * mosq_act_rate * activation_rate * optim_solution$Sus_vec / (Total_population)) #numerator uninf mosq
 R11 = ((mu + recovery_rate) * (mu_u + mosq_act_rate) * (mu + activation_rate) *  mu_u)  #denominator uninf mosq
@@ -772,9 +752,9 @@ sammy12 <- ggplot(optim_solution) +
            xintercept = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
            linetype = "dashed") +
   annotate(geom = "text",
-           label = expression(paste(italic("Wolbachia "),"introduction")),
+           label = expression(paste(italic("Wolbachia "),"introduction starts")),
            x = Locally_acquired_cases[Locally_acquired_cases$Date=="2014-10-01",1],
-           y = c(0.4),
+           y = c(0.6),
            angle = 90,
            vjust = 1) +
   theme(panel.background = element_rect(fill = "white", colour = "white"),
@@ -800,30 +780,30 @@ S_u = seq(1,0,-0.01)
 
 S_w = seq(0,1,0.01)
 
-trans_prob_u = 0.2147
-trans_prob_wh = 0.0052
+trans_prob_u = 0.1976
+trans_prob_wh = 0.0084
 
 alpha1 = (biting_rate_w^2 * trans_prob_wh * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
-alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha2 = (biting_rate_u^2 * trans_prob_u * mosq_act_rate)/((mu_u + mosq_act_rate) * mu_u)
 alpha = alpha1/alpha2
 
 R0Rmax_Sw = sqrt((1-S_w)+ alpha * S_w)
 R_eta = data.frame(R0Rmax_Sw, S_w)
 
-trans_prob_u1 = 0.2116
-trans_prob_wh1 = 0.0029
+trans_prob_u1 = 0.1966
+trans_prob_wh1 = 0.0079
 
 alpha11 = (biting_rate_w^2 * trans_prob_wh1 * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
-alpha22 = (biting_rate_u^2 * trans_prob_u1 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha22 = (biting_rate_u^2 * trans_prob_u1 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu_u)
 alpha_L = alpha11/alpha22
 
 R0Rmax_SwL = sqrt((1-S_w)+ alpha_L * S_w)
 
-trans_prob_u2 = 0.2178
-trans_prob_wh2 = 0.0097
+trans_prob_u2 = 0.1986
+trans_prob_wh2 = 0.0090
 
 alpha111 = (biting_rate_w^2 * trans_prob_wh2 * mosq_act_wol_rate)/((mu_w + mosq_act_wol_rate)*mu_w)
-alpha222 = (biting_rate_u^2 * trans_prob_u2 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu)
+alpha222 = (biting_rate_u^2 * trans_prob_u2 * mosq_act_rate)/((mu_u + mosq_act_rate) * mu_u)
 alpha_U = alpha111/alpha222
 
 R0Rmax_SwU = sqrt((1-S_w)+ alpha_U * S_w)
@@ -848,45 +828,44 @@ sammy13 <- ggplot() +
 
 sammy13
 
+## 1 - (Peak R0 Wolbachia / Peak R0 non-Wolbachia)  is the reduction in Relative R0
 ###############################################################################################################################
-#the mean R0 for pre-wolbachia
-SSS = optim_solution[optim_solution$Status=="Pre-Wolbachia", ]
-mean_of_R_nut_before_wol = mean(SSS$R_nut)
-mean_of_R_nut_before_wol
 
-#the mean R0 for post wolbachia
-TTT = optim_solution[optim_solution$Status=="Post-Wolbachia", ]
-mean_of_R_nut_after_wol = mean(TTT$R_nut)
-mean_of_R_nut_after_wol
+## SENSITIVITY ANALYSIS ##
+# 30% devistion from the baseline 
 
-############################################################################################################
+library(sensitivity)
+library(boot) 
+library(ggplot2) 
+library(knitr)
+library(kableExtra)
+n=10000
+eta = rep(0.9,n)
+X<-data.frame(mu_u=runif(n,0.0301,0.0559),
+              mu_w=runif(n,0.0476,0.0884),
+              mosq_act_rate_u=runif(n,0.07,0.13),
+              mosq_act_rate_w=runif(n,0.07,0.13),
+              bit_rate_u=runif(n,0.21,0.39),
+              bit_rate_w=runif(n,0.1995,0.3705),
+              trans_prob_u=runif(n,0.15463,0.28717),
+              trans_prob_wh=runif(n,0.00182,0.00338)
+) 
+colnames(X) = c("μ_u", "μ_w", "ψ_u", "ψ_w", "b_u", "b_w", "α_u", "α_wh")
+head(X)
+#knitr::kable(X)
+y<-with(X, ((1-eta)+ (((b_w^2 * α_wh * ψ_w)/((μ_w + ψ_w)*μ_w))/((b_u^2 * α_u * ψ_u)/((μ_u + ψ_u) * μ_u))) * eta)^(1/2))
+x<-pcc(X,y, rank = TRUE, semi=FALSE,nboot=10000) 
+print(x) 
+ggplot(data = x, ylim=c(-1,1), size = 4) 
+sammy_sen <- ggplot(x) +
+  geom_col(colour = "black",fill = "red", size = 0.5, alpha = 0.5) +
+  theme(panel.background = element_rect(fill = "white", colour = "white"),
+        panel.grid.major = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.line = element_line(size = 0.4, colour = "grey10"),
+        text = element_text(size=12,  family="calibri"),
+        legend.key = element_rect(fill = "white", colour = "white"),
+        legend.position = "top",
+        strip.text = element_text(size = 12, colour = 'white'))
 
-# Plotting the yearly aggregated dengue case notifications for pre-Wolbachia (from 2001 to 2014) and 
-# post-Wolbachia (from 2014 - 2019) periods for both Imported and locally acquired cases
-
-library(ggsignif)
-library(tidyverse)
-both_cases <- read.csv("dengue_both.csv")
-both_cases
-sam <- ggplot(both_cases, aes(x=relevel(status, "pre-wolbachia"), y=dengue_cases)) +
-  geom_boxplot(aes(fill=status)) +
-  geom_signif(comparisons = list(c("pre-wolbachia", "post-wolbachia")), 
-              map_signif_level=TRUE, tip_length = 0, vjust = 0.2) +
-  scale_fill_discrete(
-    labels = c(expression(paste("post-wolbachia" = "post-", italic("Wolbachia"), " (2014-2019)")),
-               expression(paste("pre-wolbachia"  = "pre-", italic("Wolbachia"), " (2001-2013)")))) +
-  xlab("Status") +
-  ylab("dengue cases") +
-  theme_bw()
-sam + facet_grid(.~type) + theme(strip.text.x = element_text(size=16, color="black",face="bold"))
-
-imp = both_cases[both_cases$type=="Imported cases",]
-imp_pre = imp[imp$status=="pre-wolbachia",]
-summary(imp_pre$dengue_cases)
-imp_post = imp[imp$status=="post-wolbachia",]
-summary(imp_post$dengue_cases)
-loc = both_cases[both_cases$type=="Locally acquired cases",]
-loc_pre = loc[loc$status == "pre-wolbachia",]
-summary(loc_pre$dengue_cases)
-loc_post = loc[loc$status == "post-wolbachia",]
-summary(loc_post$dengue_cases)
+sammy_sen
