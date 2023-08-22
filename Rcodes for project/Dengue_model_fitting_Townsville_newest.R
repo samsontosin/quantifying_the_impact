@@ -154,7 +154,7 @@ Dengue_base_model = function(t, state, parameters) {
     F_w = Sus_wol_vec + Exp_wol_vec + Inf_wol_vec       #Wolbachia-infected adult mosquitoes
     FF = F_u + F_w                                      #All adult mosquitoes
     QQ = Aq_vec + Aq_wol_vec                            #All aquatic-staged mosquitoes 
-    K = L * Total_population * (cos (2 * pi * (t + 15)/(365.25)) + 1) / 2  #Chowell et al                       #Carrying capacity
+    K = L * Total_population * (cos (2 * pi * (t + 15)/(365.25)) + 1) / 2  #Chowell et al  #Carrying capacity
     kappa = ifelse((t >  as.numeric(post_wolb_date - start_sim_date)) &&
                      t <  as.numeric(wolb_stop_date - start_sim_date), wolb_rate, 0)                #Wolbachia mosquitoes importation rate
     
@@ -466,8 +466,8 @@ estimates
 
 # Calculate the optimal solution with Wolbachia-infected mosquitoes
 optim_params = parameters
-optim_params["trans_prob_u"] = 0.1976 #trans_prob_u_optim
-optim_params["trans_prob_wh"] = 0.0084 #trans_prob_wh_optim
+optim_params["trans_prob_u"] = trans_prob_u_optim
+optim_params["trans_prob_wh"] = trans_prob_wh_optim
 
 optim_state = state
 
@@ -524,8 +524,8 @@ optim_solution$upper95 = qpois(0.975, optim_solution$Incidence_monthly)
 
 # Calculate the optimal solution with no Wolbachia-infected mosquitoes
 optim_params1 = parameters
-optim_params1["trans_prob_u"] = 0.1976 #trans_prob_u_optim
-optim_params1["trans_prob_wh"] = 0.0084 #trans_prob_wh_optim
+optim_params1["trans_prob_u"] = trans_prob_u_optim
+optim_params1["trans_prob_wh"] = trans_prob_wh_optim
 optim_params1["wolb_rate"] = 0
 
 optim_state1 = state
@@ -657,14 +657,14 @@ nnn1 = ggplot()+
 nnn1
 ##############################################################################################################################
 
-# Computing the corresponding reduction in dengue incidence via Wolbachia intervention from the Wolbachia release date onwards
+# Computing the corresponding reduction in dengue incidence via Wolbachia intervention from the Wolbachia release start to stop date
 
-deng_inc_from_WRD = optim_solution1[optim_solution1$Date >= "2014-10-01", ]  #dengue incidence from wolbachia release start date (for wolb_rate = 0 (no wolbachia introduction))
+deng_inc_from_WRD = optim_solution1[optim_solution1$Date >= "2014-10-01" & optim_solution1$Date < "2017-02-01", ]  #dengue incidence from wolbachia release start date to stop date (for wolb_rate = 0 (no wolbachia introduction))
 length(deng_inc_from_WRD[,1])
 deng_inc_from_WRD_total = sum(deng_inc_from_WRD[,"Incidence_monthly"])  
 deng_inc_from_WRD_total
 
-deng_inc_from_WRD_WW = optim_solution[optim_solution$Date >= "2014-10-01", ]  # for wolb_rate = 4694 (Wolbachia introduction)
+deng_inc_from_WRD_WW = optim_solution[optim_solution$Date >= "2014-10-01" & optim_solution$Date < "2017-02-01", ]  # for wolb_rate = 4694 (Wolbachia introduction)
 length(deng_inc_from_WRD_WW[,1])
 deng_inc_from_WRD_WW_total = sum(deng_inc_from_WRD_WW[,"Incidence_monthly"])  
 deng_inc_from_WRD_WW_total
@@ -672,8 +672,8 @@ deng_inc_from_WRD_WW_total
 perc_reduction_inc = (deng_inc_from_WRD_total - deng_inc_from_WRD_WW_total)/deng_inc_from_WRD_total * 100 # percentage decrease in cases from model values
 perc_reduction_inc
 
-#dd111_ULCI = dd111 for LCI and UCI values of estimates        #95% CI lower 
-#  The reduction is 77.5% with CI = 0.771 - 0.779.
+#ULCI = LCI and UCI values for estimates        #95% CI lower 
+#  The reduction is 65.47% with CI = 65.17% - 65.70%.
 #####################################################################################################################################################
 # Computing the corresponding reduction in dengue incidence via Wolbachia intervention from the Wolbachia release stop date onwards
 
@@ -690,8 +690,8 @@ deng_inc_from_WRD_WW_total1
 perc_reduction_inc1 = (deng_inc_from_WRD_total1 - deng_inc_from_WRD_WW_total1)/deng_inc_from_WRD_total1 * 100 # percentage decrease in cases from model values
 perc_reduction_inc1
 
-#dd111_ULCI = dd111 for LCI and UCI values of estimates        #95% CI  
-#  The reduction is 77.5% with CI = 0.771 - 0.779.
+#ULCI = LCI and UCI values for estimates        #95% CI  
+#  The reduction is 99.32% with CI = 99.26% - 99.40%.
 
 #####################################################################################################################################################
 # Computing and plotting the time-varying reproductive number (R_0).
